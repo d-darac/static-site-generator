@@ -6,35 +6,32 @@ from block_markdown import markdown_to_html_node
 
 
 def copy_static(source, destination):
-    source_path = os.path.realpath(os.path.join(".", source))
-    destination_path = os.path.realpath(os.path.join(".", destination))
-
     if not os.path.exists(source):
         raise Exception(f"Source path not found: {source}")
 
     print(f"Deleting {destination} directory...")
 
-    if os.path.exists(destination_path):
-        shutil.rmtree(destination_path)
+    if os.path.exists(destination):
+        shutil.rmtree(destination)
 
     print(f"Copying static files to {destination} directory...")
-    copy_contents(source_path, destination_path)
+    copy_contents(source, destination)
 
 
-def copy_contents(source_path, destination_path):
-    os.mkdir(destination_path)
-    source_contents = os.listdir(source_path)
+def copy_contents(src_dir_path, dest_dir_path):
+    os.mkdir(dest_dir_path)
+    src_contents = os.listdir(src_dir_path)
 
-    for item in source_contents:
-        source_child_path = os.path.join(source_path, item)
-        destination_child_path = os.path.join(destination_path, item)
+    for item in src_contents:
+        src_child_path = os.path.join(src_dir_path, item)
+        dest_child_path = os.path.join(dest_dir_path, item)
 
-        if os.path.isfile(source_child_path):
-            print("Copying:", source_child_path, "\nto:     ", destination_child_path)
-            shutil.copy(source_child_path, destination_child_path)
+        if os.path.isfile(src_child_path):
+            print("Copying:", src_child_path, "\nto:     ", dest_child_path)
+            shutil.copy(src_child_path, dest_child_path)
             continue
 
-        copy_contents(source_child_path, destination_child_path)
+        copy_contents(src_child_path, dest_child_path)
 
 
 def extract_title(markdown):
@@ -50,11 +47,11 @@ def extract_title(markdown):
 def generate_page(from_path, template_path, dest_path):
     print(f"Generating page from {from_path} to {dest_path} using {template_path}")
 
-    markdown_file = open(os.path.realpath(os.path.join(".", from_path)), "r")
+    markdown_file = open(from_path, "r")
     markdown = markdown_file.read()
     markdown_file.close()
 
-    template_file = open(os.path.realpath(os.path.join(".", template_path)), "r")
+    template_file = open(template_path, "r")
     template = template_file.read()
     template_file.close()
 
@@ -64,14 +61,35 @@ def generate_page(from_path, template_path, dest_path):
     template = re.sub(r"{{\s*Title\s*}}", title, template)
     template = re.sub(r"{{\s*Content\s*}}", content, template)
 
-    dest_dir = os.path.dirname(os.path.realpath(os.path.join(".", dest_path)))
+    dest_dir = os.path.dirname(dest_path)
 
     if not os.path.exists(dest_dir):
         os.makedirs(dest_dir, exist_ok=True)
 
-    html_file = open(os.path.realpath(os.path.join(".", dest_path)), "x")
+    html_file = open(dest_path, "x")
     html_file.write(template)
     html_file.close()
+
+
+def generate_pages_recursive(src_dir_path, template_path, dest_dir_path):
+    src_contents = os.listdir(src_dir_path)
+
+    for item in src_contents:
+        src_child_path = os.path.join(src_dir_path, item)
+        dest_child_path = os.path.join(dest_dir_path, item)
+
+        if os.path.isfile(src_child_path):
+            if src_child_path.endswith(".md"):
+                generate_page(
+                    src_child_path, template_path, dest_child_path.replace("md", "html")
+                )
+            continue
+
+        generate_pages_recursive(
+            src_child_path,
+            template_path,
+            dest_child_path,
+        )
 
 
 """
