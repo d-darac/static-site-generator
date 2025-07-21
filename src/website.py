@@ -44,7 +44,7 @@ def extract_title(markdown):
     raise ValueError("No h1 headers found in markdown file.")
 
 
-def generate_page(from_path, template_path, dest_path):
+def generate_page(from_path, template_path, dest_path, basepath):
     print(f"Generating page from {from_path} to {dest_path} using {template_path}")
 
     markdown_file = open(from_path, "r")
@@ -60,6 +60,8 @@ def generate_page(from_path, template_path, dest_path):
 
     template = re.sub(r"{{\s*Title\s*}}", title, template)
     template = re.sub(r"{{\s*Content\s*}}", content, template)
+    template = re.sub(r'href="\/', f'href="{basepath}', template)
+    template = re.sub(r'src="\/', f'src="{basepath}', template)
 
     dest_dir = os.path.dirname(dest_path)
 
@@ -71,7 +73,7 @@ def generate_page(from_path, template_path, dest_path):
     html_file.close()
 
 
-def generate_pages_recursive(src_dir_path, template_path, dest_dir_path):
+def generate_pages_recursive(src_dir_path, template_path, dest_dir_path, basepath):
     src_contents = os.listdir(src_dir_path)
 
     for item in src_contents:
@@ -81,14 +83,15 @@ def generate_pages_recursive(src_dir_path, template_path, dest_dir_path):
         if os.path.isfile(src_child_path):
             if src_child_path.endswith(".md"):
                 generate_page(
-                    src_child_path, template_path, dest_child_path.replace("md", "html")
+                    src_child_path,
+                    template_path,
+                    dest_child_path.replace("md", "html"),
+                    basepath,
                 )
             continue
 
         generate_pages_recursive(
-            src_child_path,
-            template_path,
-            dest_child_path,
+            src_child_path, template_path, dest_child_path, basepath
         )
 
 
